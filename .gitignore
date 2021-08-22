@@ -1,5 +1,9 @@
 __pycache__
 .vscode
+
 build
 datasets
 logs
+
+/benchmarking/scripts/*
+!/benchmarking/scripts/common.sh
