@@ -19,7 +19,7 @@ set -e
 . \$(dirname \$0)/../common.sh
 
 python3 \$repo/run_benchmark.py \
-    -m bench.spark.kmeans \
+    -m bench.${provider}.${algorithm} \
     -r \$repo \
     -d \$datasets \
     -f ${format} \
