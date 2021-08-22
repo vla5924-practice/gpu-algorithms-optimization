@@ -1,13 +1,24 @@
+import csv
 import os
 import re
 import subprocess
-from statistics import mean
+
 from argparse import ArgumentParser
+from statistics import mean
 
 
-def append_to_log(filename: str, log: str) -> None:
-    with open(filename, "a") as file:
-        file.write(log + "\n")
+class MiniLogger:
+    def info(message=""):
+        print("[ INFO ]", message)
+
+    def run(message=""):
+        print("[ RUN  ]", message)
+
+    def ok(message=""):
+        print("[  OK  ]", message)
+
+    def fail(message=""):
+        print("[ FAIL ]", message)
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,13 +27,15 @@ parser = ArgumentParser()
 parser.add_argument("-m", "--module",
                     help="bench module name (for example, bench.rapids.kmeans)", metavar="MODULE")
 parser.add_argument("-r", "--root-dir", default=current_dir, dest="root_dir",
-                    help="path to ml-benchmark repository root (current directory by default)", metavar="DIRECTORY")
+                    help="path to repository root (current directory by default)", metavar="DIRECTORY")
 parser.add_argument("-d", "--datasets-dir", default=os.path.join(current_dir, "datasets"), dest="datasets_dir",
                     help="path to directory with datasets (default is ./datasets)", metavar="DIRECTORY")
-parser.add_argument("-f", "--datasets-format", default="npy", dest="datasets_format",
-                    help="file formats of datasets (npy, arff, svm)", metavar="FORMAT")
-parser.add_argument("-l", "--log-file", default=os.path.join(current_dir, "logs", "bench.log"), dest="log_file",
-                    help="destination log file path (default is ./logs/bench.log)", metavar="FILE")
+parser.add_argument("-l", "--datasets-list", default="", dest="datasets_list",
+                    help="comma-separated list of datasets filenames", metavar="DATASET1.NPY,DATASET2.NPY,...")
+parser.add_argument("-rf", "--report-full", default=os.path.join(current_dir, "logs", "bench_full.csv"), dest="report_full",
+                    help="full csv report file path (default is ./logs/bench_full.csv)", metavar="FILE")
+parser.add_argument("-ra", "--report-avg", default=os.path.join(current_dir, "logs", "bench_avg.csv"), dest="report_avg",
+                    help="average csv report file path (default is ./logs/bench_avg.csv)", metavar="FILE")
 parser.add_argument("-e", "--executable", default="python3",
                     help="name of python executable (default is python3)", metavar="EXECUTABLE")
 parser.add_argument("-i", "--iters", default=1, type=int,
@@ -31,59 +44,60 @@ parser.add_argument("extra", nargs="*",
                     help="additional arguments for bench script", metavar="ARGS")
 args = parser.parse_args()
 
-# datasets = ("christine", "higgs", "sylvine", "albert", "australian", "guillermo",
-#             "jasmine", "riccardo", "dionis", "robert", "dilbert")
-datasets = ("australian", "sylvine")
+datasets = args.datasets_list.split(",") if len(
+    args.datasets_list) > 0 else ["Australian.npy"]
 
 os.chdir(args.root_dir)
 
-# Clear log file contents, if any
-with open(args.log_file, "w"):
-    pass
+report_full_file = open(args.report_full, "w")
+report_full_writer = csv.writer(report_full_file, delimiter=",")
+report_full_writer.writerow(["Dataset", "Iteration", "Return code",
+                            "Samples dimensions", "Elapsed time", "Accuracy score"])
 
+report_avg_file = open(args.report_avg, "w")
+report_avg_writer = csv.writer(report_avg_file, delimiter=",")
+report_avg_writer.writerow(["Dataset", "Iterations count",
+                           "Samples dimensions", "Elapsed time", "Accuracy score"])
+
+logger = MiniLogger()
 solved = 0
 for dataset in datasets:
-    dataset_name = "{}.{}".format(dataset, args.datasets_format)
-    dataset_path = os.path.join(args.datasets_dir, dataset_name)
+    dataset_path = os.path.join(args.datasets_dir, dataset)
     extra_args = " ".join(
         '"' + arg.replace("%D", dataset_path) + '"' for arg in args.extra)
-    cmd = "{} -m {} -ff {} {}".format(args.executable, args.module,
-                                      dataset_path, extra_args)
+    cmd = f"{args.executable} -m {args.module} -ff {dataset_path} {extra_args}"
     times = []
-    print("[ RUN  ]", cmd)
+    accuracies = []
+    logger.run(cmd)
     for iter in range(args.iters):
         if args.iters > 1:
-            print("[ ==== ] Iteration: {}/{}".format(iter + 1, args.iters))
+            logger.info("Iteration: {}/{}".format(iter + 1, args.iters))
         res = subprocess.run(cmd, shell=True, capture_output=True)
-        out = str(res.stdout).replace("\\n", "|").replace("'", "")
+        out = str(res.stdout).replace("\\n", "\n").replace("'", "")
         if res.stdout is None:
-            print("[ FAIL ] No output, return code", res.returncode)
-            append_to_log(args.log_file, ">>> {} {} no_output".format(
-                dataset, res.returncode))
-        time = 0.0
+            logger.fail("No output, return code", res.returncode)
         match = re.search(r'Fit time:[ ]*(\d+\.\d+)', out)
-        if match is not None:
-            time = match[1]
-            times.append(float(time))
-            solved += 1
+        time = float(match[1]) if match is not None else 0.0
+        times.append(time)
         match = re.search(r'Fit samples:[ ]*\((\d+),[ ]*(\d+)\)', out)
         dim = "{} {}".format(match[1], match[2]) if match is not None else ""
         match = re.search(r'Accuracy score:[ ]*(\d+\.\d+)', out)
-        accuracy = match[1] if match is not None else 0.0
+        accuracy = float(match[1]) if match is not None else 0.0
+        accuracies.append(accuracy)
         match = re.findall(r'(\[[WE]\].+?[\|\n])', out)
-        we = "|".join(match) if match is not None else ""
+        we = "\n".join(match) if match is not None else ""
         if we:
             print("\n".join(match))
         if res.returncode == 0:
-            print("[  OK  ] Success, return code 0")
+            solved += 1
+            logger.ok("Success, return code 0")
         else:
-            print("[ FAIL ] Error, return code", res.returncode)
-        append_to_log(args.log_file, ">>> {} {} {} {} {} {}".format(
-            dataset, res.returncode, dim, time, accuracy, we))
-    if args.iters > 1 and len(times) > 0:
-        append_to_log(args.log_file, ">>> {} avg_time {}".format(
-            dataset, mean(times)))
+            print(out)
+            logger.fail("Error, return code", res.returncode)
+        report_full_writer.writerow(
+            [dataset, iter, res.returncode, dim, time, accuracy])
+    report_avg_writer.writerow(
+        [dataset, args.iters, dim, mean(times), mean(accuracies)])
 
-append_to_log(args.log_file, ">>> Solved {} of {}".format(
-    solved, len(datasets) * args.iters))
-print("[ ==== ] Log written to", args.log_file)
+logger.info("Executed {} of {}".format(solved, len(datasets) * args.iters))
+logger.info("Report written to", args.output)

@@ -1,12 +1,17 @@
 #!/bin/bash
 
+################################################################################
+### Arguments:                                         ######################### 
+###   $1 - provider name (rapids, scikit, spark, misc) ######################### 
+###   $2 - algorithm name (e.g. logistic_regression)   #########################
+################################################################################
+
 set -e
 
 scripts_dir=$(realpath $(dirname $0)/../scripts)
 provider=$1
 target_dir="${scripts_dir}/${provider}"
 algorithm=$2
-format=${3:-npy}
 
 mkdir -p "${scripts_dir}/${provider}"
 
@@ -21,9 +26,10 @@ set -e
 python3 \$repo/run_benchmark.py \
     -m bench.${provider}.${algorithm} \
     -r \$repo \
-    -d \$datasets \
-    -f ${format} \
+    -d \$datasets_dir \
+    -l \$datasets_list \
     -i \$iters \
-    -l \$logs/${provider}-${algorithm}-\$timestamp.log \
-    -- -tf %D --double
+    -rf \$logs/${provider}-${algorithm}-\$timestamp-full.csv \
+    -ra \$logs/${provider}-${algorithm}-\$timestamp-avg.avg \
+    -- -tf %D --double > \$logs/${provider}-${algorithm}-\$timestamp.log
 " > ${target_dir}/${algorithm}.sh

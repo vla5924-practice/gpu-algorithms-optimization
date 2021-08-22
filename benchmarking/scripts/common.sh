@@ -2,7 +2,8 @@
 
 dir=`dirname $0`
 repo=`realpath $dir/../..`
-datasets=$repo/datasets
+datasets_dir=$repo/datasets
+datasets_list="Australian.npy,guillermo.npy,riccardo.npy"
 logs=$repo/logs
 iters=${1:-1}
 miniconda_dir=/home/$USER/huawei/miniconda3
