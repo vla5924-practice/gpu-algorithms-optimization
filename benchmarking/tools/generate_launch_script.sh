@@ -33,3 +33,5 @@ python3 \$repo/run_benchmark.py \
     -ra \$logs/${provider}-${algorithm}-\$timestamp-avg.avg \
     -- -tf %D --double > \$logs/${provider}-${algorithm}-\$timestamp.log
 " > ${target_dir}/${algorithm}.sh
+
+chmod +x ${target_dir}/${algorithm}.sh

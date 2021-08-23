@@ -85,8 +85,7 @@ for dataset in datasets:
         accuracy = float(match[1]) if match is not None else 0.0
         accuracies.append(accuracy)
         match = re.findall(r'(\[[WE]\].+?[\|\n])', out)
-        we = "\n".join(match) if match is not None else ""
-        if we:
+        if match is not None:
             print("\n".join(match))
         if res.returncode == 0:
             solved += 1
@@ -98,6 +97,9 @@ for dataset in datasets:
             [dataset, iter, res.returncode, dim, time, accuracy])
     report_avg_writer.writerow(
         [dataset, args.iters, dim, mean(times), mean(accuracies)])
+
+report_avg_file.close()
+report_full_file.close()
 
 logger.info("Executed {} of {}".format(solved, len(datasets) * args.iters))
 logger.info("Report written to", args.output)
