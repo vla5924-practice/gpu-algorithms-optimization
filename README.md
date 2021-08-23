@@ -1,1 +1,3 @@
-# gpu-algorithms-optimization
+# GPU algorithms optimization
+
+Практические работы и сопутствующая документация по проекту "Оптимизация алгоритмов машинного обучения для GPU"
