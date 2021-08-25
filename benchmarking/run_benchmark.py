@@ -85,7 +85,7 @@ for dataset in datasets:
         accuracy = float(match[1]) if match is not None else 0.0
         accuracies.append(accuracy)
         match = re.findall(r'(\[[WE]\].+?[\|\n])', out)
-        if match is not None:
+        if match is not None and len(match) > 0:
             print("\n".join(match))
         if res.returncode == 0:
             solved += 1
