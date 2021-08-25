@@ -4,8 +4,8 @@ from cuml.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from common import argparser, cuda, dataset, utils
-from common.timer import Timer
+from ..common import argparser, cuda, dataset, utils
+from ..common.timer import Timer
 
 
 args = argparser.build_parser().parse_args()

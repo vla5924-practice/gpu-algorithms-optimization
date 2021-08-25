@@ -2,8 +2,8 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql import SparkSession
 
-from common import argparser
-from common.timer import Timer
+from ..common import argparser
+from ..common.timer import Timer
 
 
 spark = SparkSession.builder.appName("ml-benchmark-kmeans").getOrCreate()

@@ -3,8 +3,8 @@ from pyspark.mllib.util import MLUtils
 from pyspark.sql import SparkSession
 from pyspark import SparkContext
 
-from common import argparser
-from common.timer import Timer
+from ..common import argparser
+from ..common.timer import Timer
 
 
 spark = SparkSession.builder.appName("ml-benchmark-naive-bayes").getOrCreate()

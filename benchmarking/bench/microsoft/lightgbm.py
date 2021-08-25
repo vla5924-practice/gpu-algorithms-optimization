@@ -3,9 +3,9 @@ import numpy as np
 
 from sklearn.metrics import accuracy_score
 
-from common import argparser, dataset, utils
-# from common import cuda
-from common.timer import Timer
+from ..common import argparser, dataset, utils
+# from ..common import cuda
+from ..common.timer import Timer
 
 
 args = argparser.build_parser().parse_args()

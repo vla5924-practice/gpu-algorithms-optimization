@@ -1,8 +1,8 @@
 from pyspark.ml.classification import LogisticRegression
 from pyspark.sql import SparkSession
 
-from common import argparser, utils
-from common.timer import Timer
+from ..common import argparser, utils
+from ..common.timer import Timer
 
 
 spark = SparkSession.builder.appName(

@@ -1,11 +1,17 @@
-import arff
 import numpy as np
 import os
 
 
 def open_arff(filename: str) -> np.ndarray:
-    arff_data = arff.load(open(filename, "r"))
-    data = np.array(arff_data["data"])
+    import arff
+    arff_data = arff.load(filename)
+    data = np.array(list(arff_data))
+    # arff_data = arff.load(open(filename, "r"))
+    # data = np.array(arff_data["data"])
+    # from scipy.io import arff
+    # arff_data = arff.loadarff(filename)
+    # data = np.array(arff_data[0])
+    # print(data)
     return data
 
 
