@@ -102,4 +102,5 @@ report_avg_file.close()
 report_full_file.close()
 
 logger.info("Executed {} of {}".format(solved, len(datasets) * args.iters))
-logger.info("Report written to", args.output)
+logger.info("Full report written to {}".format(args.report_full))
+logger.info("Average report written to {}".format(args.report_avg))
