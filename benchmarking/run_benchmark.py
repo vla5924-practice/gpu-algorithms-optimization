@@ -8,16 +8,16 @@ from statistics import mean
 
 
 class MiniLogger:
-    def info(message=""):
+    def info(self, message=""):
         print("[ INFO ]", message)
 
-    def run(message=""):
+    def run(self, message=""):
         print("[ RUN  ]", message)
 
-    def ok(message=""):
+    def ok(self, message=""):
         print("[  OK  ]", message)
 
-    def fail(message=""):
+    def fail(self, message=""):
         print("[ FAIL ]", message)
 
 
