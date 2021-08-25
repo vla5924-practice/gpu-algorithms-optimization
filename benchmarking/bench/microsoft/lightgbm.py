@@ -21,8 +21,6 @@ print("Fit samples:", X.shape)
 
 # common.cuda_warm_up()
 
-fit_dataset = lightgbm.Dataset(X, label=y)
-
 timer = Timer()
 params = {
     "objective": "binary",
@@ -31,12 +29,17 @@ params = {
     # "device": "gpu",
     # "gpu_device_id": 0,
 }
-model = lightgbm.train(params, fit_dataset)
+model = lightgbm.LGBMClassifier(**params)
+model.fit(X, y)
 print("Fit time:", timer.count())
 
 if (args.test):
-    print("Test dataset:", args.test_file)
-    X_t, y_t = dataset.open_auto_extract_dataset(args.test_file, dtype)
+    if args.test_file:
+        print("Test dataset:", args.test_file)
+        X_t, y_t = dataset.open_auto_extract_dataset(args.test_file, dtype)
+    else:
+        print("Test dataset:", args.fit_file)
+        X_t, y_t = X, y
     print("Test targets:", y_t.shape)
     print("Test samples:", X_t.shape)
 
