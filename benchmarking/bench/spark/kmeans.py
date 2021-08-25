@@ -2,17 +2,18 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.evaluation import ClusteringEvaluator
 from pyspark.sql import SparkSession
 
-from .. import common
+from common import argparser
+from common.timer import Timer
 
 
 spark = SparkSession.builder.appName("ml-benchmark-kmeans").getOrCreate()
-args = common.build_argument_parser(test_file=False, test=False).parse_args()
+args = argparser.build_parser(test_file=False, test=False).parse_args()
 
 print("Fit dataset:", args.fit_file)
 
 X = spark.read.format("libsvm").load(args.fit_file)
 
-timer = common.Timer()
+timer = Timer()
 kmeans = KMeans().setK(2).setSeed(777)
 model = kmeans.fit(X)
 print("Fit time:", timer.count())
