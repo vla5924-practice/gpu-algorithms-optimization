@@ -3,8 +3,7 @@ import numpy as np
 
 from sklearn.metrics import accuracy_score
 
-from ..common import argparser, dataset, utils
-# from ..common import cuda
+from ..common import argparser, cuda, dataset, utils
 from ..common.timer import Timer
 
 
@@ -19,13 +18,13 @@ X, y = dataset.open_auto_extract_dataset(args.fit_file, dtype)
 print("Fit targets:", y.shape)
 print("Fit samples:", X.shape)
 
-# common.cuda_warm_up()
+cuda.cuda_warm_up()
 
 timer = Timer()
 params = {
     "objective": "binary",
     "metric": "auc",
-    "device": "cpu",
+    "device": "cuda",
     # "device": "gpu",
     # "gpu_device_id": 0,
 }

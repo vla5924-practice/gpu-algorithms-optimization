@@ -73,9 +73,9 @@ for dataset in datasets:
         if args.iters > 1:
             logger.info("Iteration: {}/{}".format(iter + 1, args.iters))
         res = subprocess.run(cmd, shell=True, capture_output=True)
-        out = str(res.stdout).replace("\\n", "\n").replace("'", "")
+        out = res.stdout.decode("utf-8")
         if res.stdout is None:
-            logger.fail("No output, return code", res.returncode)
+            logger.fail("No output, return code {}".format(res.returncode))
         match = re.search(r'Fit time:[ ]*(\d+\.\d+)', out)
         time = float(match[1]) if match is not None else 0.0
         times.append(time)
@@ -92,7 +92,8 @@ for dataset in datasets:
             logger.ok("Success, return code 0")
         else:
             print(out)
-            logger.fail("Error, return code", res.returncode)
+            print(res.stderr.decode("utf-8"))
+            logger.fail("Error, return code {}".format(res.returncode))
         report_full_writer.writerow(
             [dataset, iter, res.returncode, dim, time, accuracy])
     report_avg_writer.writerow(
