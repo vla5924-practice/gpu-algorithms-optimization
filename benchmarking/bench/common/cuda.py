@@ -1,5 +1,6 @@
 import cudf
 import numpy as np
+import pandas as pd
 
 
 def cuda_warm_up() -> None:
