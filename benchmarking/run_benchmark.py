@@ -2,6 +2,7 @@ import csv
 import os
 import re
 import subprocess
+import yaml
 
 from argparse import ArgumentParser
 from statistics import mean
@@ -21,69 +22,75 @@ class MiniLogger:
         print("[ FAIL ]", message)
 
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
+class ReportMetric:
+    def __init__(self, name: str, code: str):
+        self.name = name
+        self.code = code
+        self._code = "{" + code + "}:"
+        self.regex = re.compile(r"\{" + code + r"\}\:[ ]*(\d+\.?\d*)")
+
+    def in_str(self, haystack: str) -> bool:
+        return self._code in haystack
+
+    def get_float(self, haystack: str) -> float:
+        match = self.regex.search(haystack)
+        return float(match[1]) if match is not None else 0.0
+
 
 parser = ArgumentParser()
-parser.add_argument("-m", "--module",
-                    help="bench module name (for example, bench.rapids.kmeans)", metavar="MODULE")
-parser.add_argument("-r", "--root-dir", default=current_dir, dest="root_dir",
-                    help="path to repository root (current directory by default)", metavar="DIRECTORY")
-parser.add_argument("-d", "--datasets-dir", default=os.path.join(current_dir, "datasets"), dest="datasets_dir",
-                    help="path to directory with datasets (default is ./datasets)", metavar="DIRECTORY")
-parser.add_argument("-l", "--datasets-list", default="", dest="datasets_list",
-                    help="comma-separated list of datasets filenames", metavar="DATASET1.NPY,DATASET2.NPY,...")
-parser.add_argument("-rf", "--report-full", default=os.path.join(current_dir, "logs", "bench_full.csv"), dest="report_full",
-                    help="full csv report file path (default is ./logs/bench_full.csv)", metavar="FILE")
-parser.add_argument("-ra", "--report-avg", default=os.path.join(current_dir, "logs", "bench_avg.csv"), dest="report_avg",
-                    help="average csv report file path (default is ./logs/bench_avg.csv)", metavar="FILE")
-parser.add_argument("-e", "--executable", default="python3",
-                    help="name of python executable (default is python3)", metavar="EXECUTABLE")
-parser.add_argument("-i", "--iters", default=1, type=int,
-                    help="number of iterations for bench execution (default is 1)", metavar="NUMBER")
-parser.add_argument("extra", nargs="*",
-                    help="additional arguments for bench script", metavar="ARGS")
+parser.add_argument("-c", "--config",
+                    help="configuration file", metavar="FILE")
 args = parser.parse_args()
 
-datasets = args.datasets_list.split(",") if len(
-    args.datasets_list) > 0 else ["Australian.npy"]
+with open(args.config, "r") as f:
+    try:
+        config = yaml.safe_load(f)
+    except:
+        print("Error while reading configuration file.")
+        exit(127)
 
-os.chdir(args.root_dir)
+datasets = config["datasets"]["files"]
 
-report_full_file = open(args.report_full, "w")
+metrics = []
+for metric_data in config["reporting"]["metrics"]:
+    metric = ReportMetric(metric_data["name"], metric_data["code"])
+    metrics.append(metric)
+
+report_full_file = open(config["reporting"]["full"].replace("%T", "0"), "w")
 report_full_writer = csv.writer(report_full_file, delimiter=",")
-report_full_writer.writerow(["Dataset", "Iteration", "Return code",
-                            "Samples dimensions", "Elapsed time", "Accuracy score"])
+row = ["Dataset", "Iteration", "Return code"]
+for metric in metrics:
+    row.append(metric.name)
+report_full_writer.writerow(row)
 
-report_avg_file = open(args.report_avg, "w")
+report_avg_file = open(config["reporting"]["average"].replace("%T", "0"), "w")
 report_avg_writer = csv.writer(report_avg_file, delimiter=",")
-report_avg_writer.writerow(["Dataset", "Iterations count",
-                           "Samples dimensions", "Elapsed time", "Accuracy score"])
+row = ["Dataset", "Iterations count"]
+for metric in metrics:
+    row.append(metric.name)
+report_avg_writer.writerow(row)
+
 
 logger = MiniLogger()
 solved = 0
+iters = int(config["execution"]["repeat"])
+module_name = "bench.{}.{}".format(config["benchmark"]["provider"], config["benchmark"]["algorithm"])
 for dataset in datasets:
-    dataset_path = os.path.join(args.datasets_dir, dataset)
-    extra_args = " ".join(
-        '"' + arg.replace("%D", dataset_path) + '"' for arg in args.extra)
-    cmd = f"{args.executable} -m {args.module} -ff {dataset_path} {extra_args}"
-    times = []
-    accuracies = []
+    dataset_path = os.path.join(config["datasets"]["directory"], dataset)
+    cmd = config["execution"]["command"].replace("%M", module_name).replace("%D", dataset_path)
+    metric_values = {}
+    for metric in metrics:
+        metric_values[metric.code] = []
     logger.run(cmd)
-    for iter in range(args.iters):
-        if args.iters > 1:
-            logger.info("Iteration: {}/{}".format(iter + 1, args.iters))
+    for iter in range(iters):
+        if iters > 1:
+            logger.info("Iteration: {}/{}".format(iter + 1, iters))
         res = subprocess.run(cmd, shell=True, capture_output=True)
         out = res.stdout.decode("utf-8")
         if res.stdout is None:
             logger.fail("No output, return code {}".format(res.returncode))
-        match = re.search(r'Fit time:[ ]*(\d+\.\d+)', out)
-        time = float(match[1]) if match is not None else 0.0
-        times.append(time)
-        match = re.search(r'Fit samples:[ ]*\((\d+),[ ]*(\d+)\)', out)
-        dim = "{} {}".format(match[1], match[2]) if match is not None else ""
-        match = re.search(r'Accuracy score:[ ]*(\d+\.\d+)', out)
-        accuracy = float(match[1]) if match is not None else 0.0
-        accuracies.append(accuracy)
+        for metric in metrics:
+            metric_values[metric.code].append(metric.get_float(out))
         match = re.findall(r'(\[[WE]\].+?[\|\n])', out)
         if match is not None and len(match) > 0:
             print("\n".join(match))
@@ -94,14 +101,18 @@ for dataset in datasets:
             print(out)
             print(res.stderr.decode("utf-8"))
             logger.fail("Error, return code {}".format(res.returncode))
-        report_full_writer.writerow(
-            [dataset, iter, res.returncode, dim, time, accuracy])
-    report_avg_writer.writerow(
-        [dataset, args.iters, dim, mean(times), mean(accuracies)])
+        row = [dataset, iter, res.returncode]
+        for metric in metrics:
+            row.append(metric_values[metric.code][-1])
+        report_full_writer.writerow(row)
+    row = [dataset, iters]
+    for metric in metrics:
+            row.append(mean(metric_values[metric.code]))
+    report_avg_writer.writerow(row)
 
 report_avg_file.close()
 report_full_file.close()
 
-logger.info("Executed {} of {}".format(solved, len(datasets) * args.iters))
-logger.info("Full report written to {}".format(args.report_full))
-logger.info("Average report written to {}".format(args.report_avg))
+logger.info("Executed {} of {}".format(solved, len(datasets) * iters))
+logger.info("Full report written to {}".format(""))
+logger.info("Average report written to {}".format(""))

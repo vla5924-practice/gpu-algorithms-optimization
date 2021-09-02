@@ -1,0 +1,26 @@
+benchmark:
+  provider: microsoft
+  algorithm: lightgbm
+
+datasets:
+  directory: /home/group/mla/benchmarks/datasets
+  files:
+    - Australian.npy
+    - SUSY.npy
+
+execution:
+  repeat: 1
+  command: python3 -m %M -ff %D -s 0.9 --test
+
+reporting:
+  average: ./logs/microsoft-lightgbm-avg-%T.csv
+  full: ./logs/microsoft-lightgbm-full-%T.csv
+  metrics:
+    - name: Fit size
+      code: FSZ
+    - name: Fit time
+      code: FIT
+    - name: Accuracy score
+      code: ACC
+    - name: Mean-squared error
+      code: MSE
