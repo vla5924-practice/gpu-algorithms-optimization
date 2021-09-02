@@ -58,14 +58,14 @@ for metric_data in config["reporting"]["metrics"]:
 
 report_full_file = open(config["reporting"]["full"].replace("%T", "0"), "w")
 report_full_writer = csv.writer(report_full_file, delimiter=",")
-row = ["Dataset", "Iteration", "Return code"]
+row = ["Dataset", "Repetition", "Return code"]
 for metric in metrics:
     row.append(metric.name)
 report_full_writer.writerow(row)
 
 report_avg_file = open(config["reporting"]["average"].replace("%T", "0"), "w")
 report_avg_writer = csv.writer(report_avg_file, delimiter=",")
-row = ["Dataset", "Iterations count"]
+row = ["Dataset", "Repetitions"]
 for metric in metrics:
     row.append(metric.name)
 report_avg_writer.writerow(row)
@@ -84,7 +84,7 @@ for dataset in datasets:
     logger.run(cmd)
     for iter in range(iters):
         if iters > 1:
-            logger.info("Iteration: {}/{}".format(iter + 1, iters))
+            logger.info("Repetition: {}/{}".format(iter + 1, iters))
         res = subprocess.run(cmd, shell=True, capture_output=True)
         out = res.stdout.decode("utf-8")
         if res.stdout is None:
