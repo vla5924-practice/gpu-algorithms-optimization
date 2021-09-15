@@ -31,6 +31,7 @@ params = {
     "objective": "binary",
     "metric": "auc",
     "device": "cuda",
+    "verbosity": 1,
     # "device": "gpu",
     # "gpu_device_id": 0,
 }

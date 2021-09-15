@@ -1,0 +1,25 @@
+diff --git a/python-package/setup.py b/python-package/setup.py
+index 752ae34..943010b 100644
+--- a/python-package/setup.py
++++ b/python-package/setup.py
+@@ -144,6 +144,7 @@ def compile_cpp(
+             cmake_cmd.append(f"-DOpenCL_LIBRARY={opencl_library}")
+     elif use_cuda:
+         cmake_cmd.append("-DUSE_CUDA=ON")
++        cmake_cmd.append("-DUSE_DP_FLOAT=0")
+     if use_mpi:
+         cmake_cmd.append("-DUSE_MPI=ON")
+     if nomp:
+diff --git a/src/treelearner/kernels/histogram_16_64_256.hu b/src/treelearner/kernels/histogram_16_64_256.hu
+index 8e3d3a5..9b1b218 100644
+--- a/src/treelearner/kernels/histogram_16_64_256.hu
++++ b/src/treelearner/kernels/histogram_16_64_256.hu
+@@ -12,7 +12,7 @@ namespace LightGBM {
+ 
+ // use double precision or not
+ #ifndef USE_DP_FLOAT
+-#define USE_DP_FLOAT 1
++#define USE_DP_FLOAT 0
+ #endif
+ 
+ // ignore hessian, and use the local memory for hessian as an additional bank for gradient
