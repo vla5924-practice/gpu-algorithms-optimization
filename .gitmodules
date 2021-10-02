@@ -1,0 +1,6 @@
+[submodule "algorithms/thirdparty/googletest"]
+	path = algorithms/thirdparty/googletest
+	url = https://github.com/google/googletest.git
+[submodule "algorithms/thirdparty/rapidcsv"]
+	path = algorithms/thirdparty/rapidcsv
+	url = https://github.com/d99kris/rapidcsv.git
